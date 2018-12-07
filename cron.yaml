@@ -1,0 +1,4 @@
+cron:
+- description: "user tick job"
+  url: /worker/
+  schedule: every 1 minutes

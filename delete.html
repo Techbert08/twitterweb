@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+  <title>Network Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+
+<h1>Delete Twitter handle</h1>
+
+{{with .Notice}}<div id="notice">{{.}}</div>{{end}}
+
+{{ if .Handle }}
+<p>Are you sure you wish to delete {{.Handle}}?</a>
+<p><form id="post-form" enctype="multipart/form-data" action="{{.DeleteURL}}" method="post">
+  <input value="Yes" type="submit">
+</form>
+
+<h3><a href="{{.BackURL}}">Back</a></h3>
+
+{{ end }}
+</body>
+</html>
