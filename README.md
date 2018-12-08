@@ -17,7 +17,7 @@ Authentication OAuth redirect URL into Twitter.
 
 Now clone this repository into the project.  Launch the Cloud Shell and pull down the repository into it:
 
-    git clone https://source.developers.google.com/p/murmur-148211/r/twitterweb twitterweb
+    git clone https://github.com/Techbert08/twitterweb.git twitterweb
 
 Inside the app code, make the following adjustments:
 
