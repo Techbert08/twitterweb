@@ -7,9 +7,9 @@ https://github.com/jdevoo/twecoll
 
 Set up a Google Cloud project.  This will give a Project ID.
 
-Add Firebase to that project.  This will link the Firebase console to the Cloud console.  Within Firebase,
-activate Firebase Authentication for Twitter.  Note the provided box for the OAuth redirect endpoint.  You'll
-need that later.
+Add Firebase to that project through the Firebase console.  This will link the Firebase console to the Cloud
+console.  Within Firebase, activate Firebase Authentication for Twitter.  Note the provided box for the OAuth
+redirect endpoint.  You'll need that later.
 
 Set up a Twitter Developer account and create an application. This application should permit sign-in.  After
 creation the Key and Secret are displayed.  Copy those into Firebase Authentication, and copy the Firebase
@@ -24,11 +24,14 @@ Inside the app code, make the following adjustments:
 1.  Inside `constants.go`, add the Cloud project ID, the Twitter Key and the Twitter Secret from before.
 1.  Go to Project Settings in Firebase and click `Add Firebase to your web app`.  Copy those settings into
     `js/firebase.js` 
+1.  Add ${PROJECTID}.appspot.com as an authorized domain.
+1.  Enable the Cloud Firestore.
+1.  After deploying, Admins can be added to `constants.go`.
 
 Finally, deploy it to App Engine:
 
     cd twitterweb
-    gcloud app deploy app.yaml cron.yaml index.yaml
+    gcloud app deploy app.yaml cron.yaml
 
 After a few moments the application should go live at http://${PROJECTID}.appspot.com  From there log in with a Twitter account,
 and input a handle to start fetching.  Twitter is rate-limited to 15 queries every 15 minutes, so a

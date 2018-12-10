@@ -10,7 +10,7 @@ import (
 // buildGephiFile walks the datastore and returns a byte array containing a GML file
 // describing the graph it found.
 func buildGephiFile(rootHandle *RootHandle, fetchedHandles []*FetchedHandle) []byte {
-	m := make(map[int64]bool)
+	m := make(map[string]bool)
 	m[rootHandle.Node.TwitterID] = true
 	for _, friendID := range rootHandle.Node.FriendIDs {
 		m[friendID] = true
@@ -54,18 +54,18 @@ func writeNode(w io.Writer, n *GephiNode) {
 
 // appendEdgeSet appends edges from the given GephiNode to the passed in set.
 // The keys of the set will be "source target"
-func appendEdgeSet(edgeSet map[string]bool, validIDs map[int64]bool, n *GephiNode) {
+func appendEdgeSet(edgeSet map[string]bool, validIDs map[string]bool, n *GephiNode) {
 	for _, follower := range n.FollowerIDs {
 		if !validIDs[follower] {
 			continue
 		}
-		edgeSet[fmt.Sprint(follower, n.TwitterID)] = true
+		edgeSet[fmt.Sprintf("%v %v", follower, n.TwitterID)] = true
 	}
 	for _, friend := range n.FriendIDs {
 		if !validIDs[friend] {
 			continue
 		}
-		edgeSet[fmt.Sprint(n.TwitterID, friend)] = true
+		edgeSet[fmt.Sprintf("%v %v", n.TwitterID, friend)] = true
 	}
 }
 

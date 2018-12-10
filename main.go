@@ -8,11 +8,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
-	"cloud.google.com/go/datastore"
+	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
 	"github.com/dghubble/go-twitter/twitter"
 )
@@ -80,7 +79,7 @@ type statusParams struct {
 	Notice         string
 	Handle         string
 	DownloadURL    string
-	TwitterID      int64
+	TwitterID      string
 	TickURL        string
 	FriendsCount   int
 	FollowersCount int
@@ -129,13 +128,13 @@ type User struct {
 // GephiNode is a Gephi node in the graph, containing its identity,
 // relationship to the root, and edges.
 type GephiNode struct {
-	TwitterID       int64
+	TwitterID       string
 	ScreenName      string
 	Relationship    string
 	FriendsCount    int
 	FollowersCount  int
-	FriendIDs       []int64
-	FollowerIDs     []int64
+	FriendIDs       []string
+	FollowerIDs     []string
 	Done            bool
 	ProfileURL      string
 	Description     string
@@ -154,16 +153,8 @@ type RootHandle struct {
 
 // FetchedHandle holds a friend or follower of a RootHandle.
 type FetchedHandle struct {
-	ParentID int64
+	ParentID string
 	Node     GephiNode
-}
-
-// Returns whether the given user should be considered an Admin.
-func isAdmin(uid string) bool {
-	admins := map[string]bool{
-		"HpQRPg0ALJa7GzLpYhx9BPRYiHy1": true,
-	}
-	return admins[uid]
 }
 
 // main registers the handlers for this web application.
@@ -185,22 +176,22 @@ func main() {
 
 // enqueueHandle uses the connected Twitter client to enqueue a request for handle to be fetched.
 // It will use the credentials of loginID to do this.  The TwitterID of the fetched user is returned.
-func enqueueHandle(ctx context.Context, client *twitter.Client, dataClient *datastore.Client, loginID string, handle string) (int64, error) {
+func enqueueHandle(ctx context.Context, client *twitter.Client, dataClient *firestore.Client, loginID string, handle string) (string, error) {
 	user, err := getTwitterUserByName(client, handle)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	if err := newRootHandle(ctx, dataClient, loginID, user); err != nil {
-		return 0, err
+		return "", err
 	}
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	return user.ID, nil
+	return user.IDStr, nil
 }
 
 // runTick will advance the state machine one step for the requested Twitter handle.
-func runTick(ctx context.Context, client *twitter.Client, dataClient *datastore.Client, loginID string, rootHandle *RootHandle) (string, error) {
+func runTick(ctx context.Context, client *twitter.Client, dataClient *firestore.Client, loginID string, rootHandle *RootHandle) (string, error) {
 	if rootHandle.Node.Done {
 		return "", fmt.Errorf("User was already done: %v", rootHandle.Node.TwitterID)
 	}
@@ -286,8 +277,7 @@ func workerHandler(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-	}
-	if time.Now().Minute()%10 == 0 {
+	} else if time.Now().Minute()%10 == 0 {
 		const SkipMessage = "Skipping tick"
 		log.Printf(SkipMessage)
 		fmt.Fprintf(w, SkipMessage)
@@ -295,11 +285,12 @@ func workerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	args := strings.Split(strings.TrimPrefix(r.URL.Path, workerPrefix), "/")
 	var rootHandles []*RootHandle
-	dataClient, err := newDatastoreClient(ctx)
+	dataClient, err := newFirestoreClient(ctx)
 	if err != nil {
 		logError(ctx, w, "", err)
 		return
 	}
+	defer dataClient.Close()
 	if len(args) == 2 {
 		loginID := args[0]
 		TwitterID := args[1]
@@ -356,11 +347,12 @@ func downloadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	dataClient, err := newDatastoreClient(ctx)
+	dataClient, err := newFirestoreClient(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("error connecting to datastore: %v", err), http.StatusInternalServerError)
 		return
 	}
+	defer dataClient.Close()
 	rootHandle, err := getRootHandleFromString(ctx, dataClient, loginID, strings.TrimPrefix(r.URL.Path, downloadPrefix))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("error getting root handle: %v", err), http.StatusInternalServerError)
@@ -394,11 +386,12 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	params := &statusParams{}
-	dataClient, err := newDatastoreClient(ctx)
+	dataClient, err := newFirestoreClient(ctx)
 	if err != nil {
 		returnError(ctx, w, statusTemplate, params, err)
 		return
 	}
+	defer dataClient.Close()
 	rootHandle, err := getRootHandleFromString(ctx, dataClient, loginID, strings.TrimPrefix(r.URL.Path, statusPrefix))
 	if err != nil {
 		returnError(ctx, w, statusTemplate, params, err)
@@ -434,23 +427,23 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // makeStatusUrl builds a URL suitable for viewing the status of the given Twitter ID.
-func makeStatusUrl(twitterID int64) string {
-	return statusPrefix + strconv.FormatInt(twitterID, 10)
+func makeStatusUrl(twitterID string) string {
+	return statusPrefix + twitterID
 }
 
 // makeDownloadUrl builds a URL that will download the graph rooted at twitterID.
-func makeDownloadUrl(twitterID int64) string {
-	return downloadPrefix + strconv.FormatInt(twitterID, 10)
+func makeDownloadUrl(twitterID string) string {
+	return downloadPrefix + twitterID
 }
 
 // makeDebugTickUrl builds an admin-only URL that will force advance the state machine.
-func makeDebugTickUrl(loginID string, twitterID int64) string {
-	return workerPrefix + loginID + "/" + strconv.FormatInt(twitterID, 10)
+func makeDebugTickUrl(loginID string, twitterID string) string {
+	return workerPrefix + loginID + "/" + twitterID
 }
 
 // makeDeleteUrl builds a URL that will delete the current Twitter handle.
-func makeDeleteUrl(twitterID int64) string {
-	return deletePrefix + strconv.FormatInt(twitterID, 10)
+func makeDeleteUrl(twitterID string) string {
+	return deletePrefix + twitterID
 }
 
 // deleteHandler processes Delete URLs.  On GET it prints a confirmation page.  On POST it does it.
@@ -462,11 +455,12 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	dataClient, err := newDatastoreClient(ctx)
+	dataClient, err := newFirestoreClient(ctx)
 	if err != nil {
 		returnError(ctx, w, deleteTemplate, params, err)
 		return
 	}
+	defer dataClient.Close()
 	rootHandle, err := getRootHandleFromString(ctx, dataClient, loginID, strings.TrimPrefix(r.URL.Path, deletePrefix))
 	if err != nil {
 		returnError(ctx, w, deleteTemplate, params, err)
@@ -535,11 +529,12 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	params := &indexParams{}
-	dataClient, err := newDatastoreClient(ctx)
+	dataClient, err := newFirestoreClient(ctx)
 	if err != nil {
 		returnError(ctx, w, indexTemplate, params, err)
 		return
 	}
+	defer dataClient.Close()
 	appUser, err := getApplicationUser(ctx, dataClient, loginID)
 	if err != nil {
 		returnError(ctx, w, indexTemplate, params, err)
