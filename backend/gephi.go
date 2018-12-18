@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"io"
 	"strings"
 )
@@ -49,7 +50,8 @@ func writeNode(w io.Writer, n *GephiNode) {
     friends %v 
     followers %v 
   ]`,
-		n.TwitterID, n.TwitterID, n.ScreenName, n.Relationship, n.ProfileURL, n.Description, n.ProfileImageURL, n.FriendsCount, n.FollowersCount)
+		n.TwitterID, n.TwitterID, n.ScreenName, n.Relationship, html.EscapeString(n.ProfileURL),
+		html.EscapeString(n.Description), html.EscapeString(n.ProfileImageURL), n.FriendsCount, n.FollowersCount)
 }
 
 // appendEdgeSet appends edges from the given GephiNode to the passed in set.

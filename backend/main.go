@@ -74,7 +74,7 @@ type FetchedHandle struct {
 
 // main registers the handlers for this web application.
 func main() {
-    http.HandleFunc(workerPrefix, workerHandler)
+	http.HandleFunc(workerPrefix, workerHandler)
 	http.HandleFunc(updateUserPrefix, updateUserHandler)
 	http.HandleFunc(addHandlePrefix, addHandleHandler)
 	http.HandleFunc(deleteHandlePrefix, deleteHandleHandler)
@@ -143,9 +143,9 @@ func runTick(ctx context.Context, client *twitter.Client, dataClient *firestore.
 			return "", err
 		}
 		_, err = obj.Update(ctx, storage.ObjectAttrsToUpdate{
-          ContentDisposition: fmt.Sprintf("Attachment; filename=%v.gml", rootHandle.Node.ScreenName),
-        })
-        if err != nil {
+			ContentDisposition: fmt.Sprintf("Attachment; filename=%v.gml", rootHandle.Node.ScreenName),
+		})
+		if err != nil {
 			return "", err
 		}
 		// Clear the message to empty the UI since it will be replaced with the Download link.
@@ -490,7 +490,6 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 // indexHandler redirects to the frontend client served from Firebase hosting.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-    http.Redirect(w, r, "https://"+ProjectID+".firebaseapp.com/", http.StatusFound)
-    return
+	http.Redirect(w, r, "https://"+ProjectID+".firebaseapp.com/", http.StatusFound)
+	return
 }
-
