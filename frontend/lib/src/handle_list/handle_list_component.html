@@ -1,0 +1,48 @@
+<!-- Components info: https://webdev.dartlang.org/components -->
+<div *ngIf="displayError.isNotEmpty">{{displayError}}</div>
+
+<div>
+  <material-input label="Handle to fetch"
+                  autoFocus floatingLabel style="width:calc(100% - 50px);"
+                  [(ngModel)]="newHandle"
+                  (keyup.enter)="add()">
+  </material-input>
+
+  <material-fab mini raised
+                (trigger)="add()"
+                [disabled]="newHandle.isEmpty">
+    <material-icon icon="add"></material-icon>
+  </material-fab>
+</div>
+
+<p *ngIf="handles.isEmpty">
+  No handles being fetched.
+</p>
+
+<div *ngIf="handles.isNotEmpty">
+  <ul>
+      <li *ngFor="let handle of handles; let i=index">
+        <span *ngIf="handle.done">{{handle.name}} - <a [href]="handle.downloadURL" [download]="handle.name + '.gml'">Download</a></span>
+        <span *ngIf="handle.remaining > 0">{{handle.name}} - {{handle.remaining}} fetches remain</span>
+        <span *ngIf="!handle.done && handle.status.isNotEmpty">{{handle.name}} - {{handle.status}}</span>
+        <material-fab mini (trigger)="handleToDelete = handle.id">
+          <material-icon icon="delete"></material-icon>
+        </material-fab>
+      </li>
+  </ul>
+</div>
+
+<modal [visible]="handleToDelete.isNotEmpty">
+  <material-dialog class="basic-dialog">
+    <h1 header>Confirm</h1>
+    <p>Are you sure?</p>
+    <div footer>
+    <material-yes-no-buttons
+        yesHighlighted
+        raised
+        (yes)="remove()"
+        (no)="handleToDelete = ''">
+    </material-yes-no-buttons>
+    </div>
+  </material-dialog>
+</modal>

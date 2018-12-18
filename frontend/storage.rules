@@ -1,0 +1,7 @@
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /graphs/{userId}/{allPaths=**} {
+      allow read: if request.auth.uid == userId;
+    }
+  }
+}

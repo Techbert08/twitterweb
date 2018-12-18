@@ -9,6 +9,7 @@ import (
 	"github.com/dghubble/oauth1"
 )
 
+// newUserTwitterClient connects a Twitter client with the passed in user's credentials.
 func newUserTwitterClient(ctx context.Context, dataClient *firestore.Client, userID string) (*twitter.Client, error) {
 	user, err := getApplicationUser(ctx, dataClient, userID)
 	if err != nil {
@@ -37,6 +38,7 @@ func permanentErrorMessage(err error) string {
 }
 
 // getTwitterUserByName gets the user identified by handle.
+// On a "permanent" error, such as a suspended account, returns a placeholder user.
 func getTwitterUserByName(client *twitter.Client, handle string) (*twitter.User, error) {
 	user, _, err := client.Users.Show(&twitter.UserShowParams{
 		ScreenName: handle,

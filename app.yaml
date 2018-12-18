@@ -1,5 +1,0 @@
-runtime: go111
-
-handlers:
-  - url: /js
-    static_dir: js

@@ -1,0 +1,17 @@
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+li {
+  line-height: 40px;
+}
+
+li:hover {
+  background-color: #EEEEEE;
+}
+
+li material-fab {
+  float: right;
+  vertical-align: middle;
+}

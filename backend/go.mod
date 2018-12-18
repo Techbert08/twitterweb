@@ -1,4 +1,4 @@
-module github.com/Techbert08/twitterweb
+module github.com/Techbert08/twitterweb/backend
 
 require (
 	cloud.google.com/go v0.34.0

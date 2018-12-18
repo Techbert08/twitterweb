@@ -1,44 +1,65 @@
 # TwitterWeb
 
-This directory contains an App Engine Go project that roughly implements the Twecoll command line utility at
-https://github.com/jdevoo/twecoll
+This repository contains a complete web application that roughly implements the Twecoll command line utility at
+https://github.com/jdevoo/twecoll.  An AngularDart-based frontend served from Firebase Hosting manages
+the UI, while an App Engine Go service manages the backend.  It makes full use of Firebase Authentication,
+Storage, and the Firestore to do this.
 
 ## Set Up
 
-Set up a Google Cloud project.  This will give a Project ID.
+Install the relevant development tools:
 
-Add Firebase to that project through the Firebase console.  This will link the Firebase console to the Cloud
-console.  Within Firebase, activate Firebase Authentication for Twitter.  Note the provided box for the OAuth
-redirect endpoint.  You'll need that later.
+1.   [Google Go](https://golang.org/ )
+1.   [AngularDart](https://webdev.dartlang.org/guides/get-started)
+1.   [Google Cloud SDK](https://cloud.google.com/sdk/)
+1.   [Firebase CLI](https://firebase.google.com/docs/cli/)
+1.   [Git](https://git-scm.com/) of course.
 
-Set up a Twitter Developer account and create an application. This application should permit sign-in.  After
-creation the Key and Secret are displayed.  Copy those into Firebase Authentication, and copy the Firebase
-Authentication OAuth redirect URL into Twitter.
+Now provision cloud resources for it:
 
-Now clone this repository into the project.  Launch the Cloud Shell and pull down the repository into it:
+1.   [Create](https://console.cloud.google.com) a Google Cloud project. Note the Project ID.
+1.   [Link](https://console.firebase.google.com) it to Firebase.
+1.   [Create](https://developer.twitter.com) a Twitter developer account and application. It should permit
+login.
+
+## Configure Firebase
+
+Inside the [Firebase Console](https://console.firebase.google.com) activate Firebase Authentication for Twitter.
+Paste the OAuth redirect endpoint into your [Twitter](https://developer.twitter.com) application configuration.
+Similarly paste the Twitter login credentials into the appropriate boxes in Firebase.
+
+Enable Firestore and Storage.
+
+## Edit the code
+
+Clone this repository:
 
     git clone https://github.com/Techbert08/twitterweb.git twitterweb
 
 Inside the app code, make the following adjustments:
 
-1.  Inside `constants.go`, add the Cloud project ID, the Twitter Key and the Twitter Secret from before.
-1.  Go to Project Settings in Firebase and click `Add Firebase to your web app`.  Copy those settings into
-    `js/firebase.js` 
-1.  Add ${PROJECTID}.appspot.com as an authorized domain.
-1.  Enable the Cloud Firestore.
-1.  After deploying, Admins can be added to `constants.go`.
+1.  Inside `backend/constants.go`, add the Cloud project ID, the Twitter Key and the Twitter Secret from before.
+1.  Inside `frontend/web/main.dart`, fill in the Firebase credentials from "Project Settings->Add Firebase to your web app"
+in the [Firebase Console](https://console.firebase.google.com). Ensure the `apiEndpoint` is set, too.
 
-Finally, deploy it to App Engine:
+## Deploy
 
-    cd twitterweb
+Run the following:
+
+    cd twitterweb/backend
     gcloud app deploy app.yaml cron.yaml
+    cd ../frontend
+    gsutil cors set cors.json gs://${PROJECTID}.appspot.com
+    webdev build
+    firebase deploy
 
-After a few moments the application should go live at http://${PROJECTID}.appspot.com  From there log in with a Twitter account,
-and input a handle to start fetching.  Twitter is rate-limited to 15 queries every 15 minutes, so a
-background task fetches one handle per minute until complete.  A download link is offered when done.
+The application should appear at https://${PROJECTID}.firebaseapp.com
 
-## Local Testing
+From there log in with a Twitter account, and input a handle to start fetching.  Twitter is rate-limited to
+15 queries every 15 minutes, so a background task fetches one handle per minute until complete. 
+A download link is offered when done.
 
-Simply use the dev server:
+## Additional work
 
-    dev_appserver.py app.yaml
+The backend code in Go should probably be a Cloud Function, but at present those aren't available in Go. If that
+happens the application can fit entirely inside Firebase tooling.

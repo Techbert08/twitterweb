@@ -1,0 +1,18 @@
+<div class="material-content">
+  <header class="material-header shadow">
+    <div class="material-header-row">
+      <span class="material-header-title">Network explorer</span>
+    </div>
+  </header>
+  <div class="app-body">
+    <div *ngIf="displayError.isNotEmpty">{{displayError}}</div>
+
+    <div *ngIf="isAuthenticated()">
+        <handle-list></handle-list>
+        <material-button clear-size (trigger)="logout()">
+          Logout
+        </material-button>
+    </div>
+    <firebase-auth-ui [disableAutoSignIn]="true" [uiConfig]="getUIConfig()"></firebase-auth-ui>
+  </div>
+</div>
