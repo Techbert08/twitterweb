@@ -50,13 +50,14 @@ Run the following:
     gcloud app deploy app.yaml cron.yaml
     cd ../frontend
     gsutil cors set cors.json gs://${PROJECTID}.appspot.com
+    pub get
     webdev build
     firebase deploy
 
 The application should appear at https://${PROJECTID}.firebaseapp.com
 
 From there log in with a Twitter account, and input a handle to start fetching.  Twitter is rate-limited to
-15 queries every 15 minutes, so a background task fetches one handle per minute until complete. 
+15 queries every 15 minutes, so a background task fetches one handle per minute until complete.
 A download link is offered when done.
 
 ## Additional work

@@ -39,6 +39,15 @@ class AppComponent implements OnInit, OnDestroy {
   /// config pulls in information needed for backend communication.
   final AppConfig _config;
 
+  /// firebaseToken holds the retrieved login token.  It's extracted out because
+  /// the order in which Twitter credentials arrive and auth.currentUser becomes
+  /// valid appears arbitrary.
+  String _firebaseToken;
+
+  /// displayName holds the current user's display name.  It is also extracted
+  /// because auth.currentUser may not be valid yet.
+  String _displayName;
+
   /// twitterToken is the user credential immediately following the login
   /// redirect.
   String _twitterToken;
@@ -59,24 +68,44 @@ class AppComponent implements OnInit, OnDestroy {
     await _auth.signOut();
   }
 
+  /// updateUser transmits Twitter credentials to the backend if all present.
+  /// The necessary information is split between the onAuthStateChanged event
+  /// and signInSuccess
+  void updateUser() {
+    if (_twitterToken != null &&
+        _twitterSecret != null &&
+        _displayName != null &&
+        _firebaseToken != null) {
+      _client
+          .post(_config.apiEndpoint + "/updateUser", body: {
+            "name": _displayName,
+            "auth": _firebaseToken,
+            "token": _twitterToken,
+            "secret": _twitterSecret
+          })
+          .then((r) => displayError = "")
+          .catchError((e) => displayError = e.toString());
+    }
+  }
+
   /// ngOnInit subscribes to login events and notifies the backend when they
   /// occur.  Only talk to the backend if Twitter credentials are present.
   @override
   void ngOnInit() {
-    _sub = _auth.onAuthStateChanged
-        .listen((user) => user?.getIdToken()?.then((token) {
-              if (_twitterToken != null && _twitterSecret != null) {
-                _client
-                    .post(_config.apiEndpoint + "/updateUser", body: {
-                      "name": user.displayName,
-                      "auth": token,
-                      "token": _twitterToken,
-                      "secret": _twitterSecret
-                    })
-                    .then((r) => displayError = "")
-                    .catchError((e) => displayError = e.toString());
-              }
-            }));
+    _sub = _auth.onAuthStateChanged.listen((user) {
+      if (user == null) {
+        _twitterToken = null;
+        _twitterSecret = null;
+        _displayName = null;
+        _firebaseToken = null;
+      } else {
+        _displayName = user.displayName;
+        user.getIdToken().then((token) {
+          _firebaseToken = token;
+          updateUser();
+        });
+      }
+    });
   }
 
   @override
@@ -86,10 +115,11 @@ class AppComponent implements OnInit, OnDestroy {
 
   /// signInSuccess is an interop callback passed to FirebaseUI.  It captures
   /// OAuth credentials but cannot get the Firebase token.  That isn't available
-  /// until after this returns.
+  /// yet.
   bool _signInSuccess(fb.UserCredential authResult, String redirectUrl) {
     _twitterToken = (authResult.credential as OAuthCredential).accessToken;
     _twitterSecret = (authResult.credential as OAuthCredential).secret;
+    updateUser();
 
     // returning false gets rid of the double page load (don't redirect to /)
     return false;
