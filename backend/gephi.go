@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"html"
 	"io"
 	"strings"
 )
@@ -37,6 +36,8 @@ func buildGephiFile(rootHandle *RootHandle, fetchedHandles []*FetchedHandle) []b
 }
 
 // writeNode appends the node labels in the current GephiNode to the writer.
+// Literal double quotes are converted to single quotes because Gephi does
+// not appear to recognize escape sequences.
 func writeNode(w io.Writer, n *GephiNode) {
 	fmt.Fprintf(w, ` 
   node [ 
@@ -50,8 +51,10 @@ func writeNode(w io.Writer, n *GephiNode) {
     friends %v 
     followers %v 
   ]`,
-		n.TwitterID, n.TwitterID, n.ScreenName, n.Relationship, html.EscapeString(n.ProfileURL),
-		html.EscapeString(n.Description), html.EscapeString(n.ProfileImageURL), n.FriendsCount, n.FollowersCount)
+		n.TwitterID, n.TwitterID, n.ScreenName, n.Relationship,
+		strings.Replace(n.ProfileURL, `"`, `'`, -1),
+		strings.Replace(n.Description, `"`, `'`, -1),
+		strings.Replace(n.ProfileImageURL, `"`, `'`, -1), n.FriendsCount, n.FollowersCount)
 }
 
 // appendEdgeSet appends edges from the given GephiNode to the passed in set.
